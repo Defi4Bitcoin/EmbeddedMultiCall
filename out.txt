@@ -1,0 +1,508 @@
+
+======= EmbeddedMultiCall.yul (EVM) =======
+
+Pretty printed source:
+object "EmbeddedMultiCall" {
+    code {
+        function allocate(size) -> ptr
+        {
+            ptr := mload(0x40)
+            if iszero(ptr) { ptr := 0x60 }
+            mstore(0x40, add(ptr, size))
+        }
+        let bgas := gas()
+        let csize := datasize("EmbeddedMultiCall")
+        let fptr := mload(0x40)
+        datacopy(fptr, csize, 0x04)
+        let size := mload(fptr)
+        size := shr(224, size)
+        let offset := allocate(size)
+        let memEnd := add(offset, size)
+        datacopy(offset, csize, size)
+        let totalSize := 0x60
+        offset := add(offset, 0x04)
+        let gasLimitPerCall := shr(224, mload(offset))
+        offset := add(offset, 0x04)
+        let returnGasUsed := shr(248, mload(offset))
+        offset := add(offset, 0x01)
+        let outBasePtr := allocate(0x60)
+        mstore(outBasePtr, number())
+        mstore(add(outBasePtr, 0x20), blockhash(sub(number(), 1)))
+        let numExecOfs := add(outBasePtr, 0x40)
+        let execCount := 0
+        for { let i := offset } lt(i, memEnd) { }
+        {
+            let adr := shr(96, mload(i))
+            i := add(i, 0x14)
+            let dataLen := shr(224, mload(i))
+            i := add(i, 0x04)
+            let dataOfs := i
+            i := add(i, dataLen)
+            let startGas := gas()
+            let ret := call(gasLimitPerCall, adr, 0, dataOfs, dataLen, 0, 0)
+            if eq(returnGasUsed, 1)
+            {
+                let gasUsed := sub(startGas, gas())
+                let outGasUsedOfs := allocate(0x04)
+                mstore(outGasUsedOfs, shl(224, gasUsed))
+                totalSize := add(totalSize, 0x04)
+            }
+            let outRetOffset := allocate(0x01)
+            mstore(outRetOffset, shl(248, ret))
+            let outDataLenOffset := allocate(0x04)
+            mstore(outDataLenOffset, shl(224, returndatasize()))
+            let outDataOffset := allocate(returndatasize())
+            returndatacopy(outDataOffset, 0, returndatasize())
+            totalSize := add(totalSize, 0x05)
+            totalSize := add(totalSize, returndatasize())
+            execCount := add(execCount, 1)
+        }
+        mstore(numExecOfs, execCount)
+        let outTotalGasUsedOfs := allocate(0x04)
+        mstore(outTotalGasUsedOfs, shl(224, sub(bgas, gas())))
+        totalSize := add(totalSize, 0x04)
+        return(outBasePtr, totalSize)
+    }
+}
+
+
+Binary representation:
+610020565b600060405190508061001557606090505b818101604052919050565b5a610141604051600482823980518060e01c905061003d81610004565b818101828583396060600483019250825160e01c600484019350835160f81c60018501945061006c6060610004565b43815260014303406020820152604081016000875b8781101561012157805160601c601482019150815160e01c6004830192508281840193505a60008084846000888ff160018a14156100d5575a82036100c66004610004565b8160e01b815260048e019d5050505b6100df6001610004565b8160f81b81526100ef6004610004565b3d60e01b81526100fe3d610004565b3d6000823e60058f019e503d8f019e5060018a0199505050505050505050610081565b5080825261012f6004610004565b5a8d0360e01b81526004870196508684f3
+
+Text representation:
+    /* "EmbeddedMultiCall.yul":262:423   */
+  jump(tag_1)
+tag_2:
+    /* "EmbeddedMultiCall.yul":289:292   */
+  0x00
+    /* "EmbeddedMultiCall.yul":321:325   */
+  0x40
+    /* "EmbeddedMultiCall.yul":315:326   */
+  mload
+    /* "EmbeddedMultiCall.yul":308:326   */
+  swap1
+  pop
+    /* "EmbeddedMultiCall.yul":350:353   */
+  dup1
+    /* "EmbeddedMultiCall.yul":340:370   */
+  tag_4
+  jumpi
+    /* "EmbeddedMultiCall.yul":364:368   */
+  0x60
+    /* "EmbeddedMultiCall.yul":357:368   */
+  swap1
+  pop
+    /* "EmbeddedMultiCall.yul":340:370   */
+tag_4:
+    /* "EmbeddedMultiCall.yul":406:410   */
+  dup2
+    /* "EmbeddedMultiCall.yul":401:404   */
+  dup2
+    /* "EmbeddedMultiCall.yul":397:411   */
+  add
+    /* "EmbeddedMultiCall.yul":391:395   */
+  0x40
+    /* "EmbeddedMultiCall.yul":384:412   */
+  mstore
+    /* "EmbeddedMultiCall.yul":262:423   */
+  swap2
+  swap1
+  pop
+  jump	// out
+tag_1:
+    /* "EmbeddedMultiCall.yul":444:449   */
+  gas
+    /* "EmbeddedMultiCall.yul":473:502   */
+  bytecodeSize
+    /* "EmbeddedMultiCall.yul":530:534   */
+  0x40
+    /* "EmbeddedMultiCall.yul":524:535   */
+  mload
+    /* "EmbeddedMultiCall.yul":567:571   */
+  0x04
+    /* "EmbeddedMultiCall.yul":560:565   */
+  dup3
+    /* "EmbeddedMultiCall.yul":554:558   */
+  dup3
+    /* "EmbeddedMultiCall.yul":545:572   */
+  codecopy
+    /* "EmbeddedMultiCall.yul":624:628   */
+  dup1
+    /* "EmbeddedMultiCall.yul":618:629   */
+  mload
+    /* "EmbeddedMultiCall.yul":654:658   */
+  dup1
+    /* "EmbeddedMultiCall.yul":650:653   */
+  0xe0
+    /* "EmbeddedMultiCall.yul":646:659   */
+  shr
+    /* "EmbeddedMultiCall.yul":639:659   */
+  swap1
+  pop
+    /* "EmbeddedMultiCall.yul":751:765   */
+  tag_5
+    /* "EmbeddedMultiCall.yul":760:764   */
+  dup2
+    /* "EmbeddedMultiCall.yul":751:765   */
+  tag_2
+  jump	// in
+tag_5:
+    /* "EmbeddedMultiCall.yul":799:803   */
+  dup2
+    /* "EmbeddedMultiCall.yul":792:798   */
+  dup2
+    /* "EmbeddedMultiCall.yul":788:804   */
+  add
+    /* "EmbeddedMultiCall.yul":947:951   */
+  dup3
+    /* "EmbeddedMultiCall.yul":940:945   */
+  dup6
+    /* "EmbeddedMultiCall.yul":932:938   */
+  dup4
+    /* "EmbeddedMultiCall.yul":923:952   */
+  codecopy
+    /* "EmbeddedMultiCall.yul":1096:1100   */
+  0x60
+    /* "EmbeddedMultiCall.yul":1170:1174   */
+  0x04
+    /* "EmbeddedMultiCall.yul":1163:1169   */
+  dup4
+    /* "EmbeddedMultiCall.yul":1159:1175   */
+  add
+    /* "EmbeddedMultiCall.yul":1150:1175   */
+  swap3
+  pop
+    /* "EmbeddedMultiCall.yul":1303:1309   */
+  dup3
+    /* "EmbeddedMultiCall.yul":1297:1310   */
+  mload
+    /* "EmbeddedMultiCall.yul":1293:1296   */
+  0xe0
+    /* "EmbeddedMultiCall.yul":1289:1311   */
+  shr
+    /* "EmbeddedMultiCall.yul":1341:1345   */
+  0x04
+    /* "EmbeddedMultiCall.yul":1334:1340   */
+  dup5
+    /* "EmbeddedMultiCall.yul":1330:1346   */
+  add
+    /* "EmbeddedMultiCall.yul":1321:1346   */
+  swap4
+  pop
+    /* "EmbeddedMultiCall.yul":1400:1406   */
+  dup4
+    /* "EmbeddedMultiCall.yul":1394:1407   */
+  mload
+    /* "EmbeddedMultiCall.yul":1390:1393   */
+  0xf8
+    /* "EmbeddedMultiCall.yul":1386:1408   */
+  shr
+    /* "EmbeddedMultiCall.yul":1438:1442   */
+  0x01
+    /* "EmbeddedMultiCall.yul":1431:1437   */
+  dup6
+    /* "EmbeddedMultiCall.yul":1427:1443   */
+  add
+    /* "EmbeddedMultiCall.yul":1418:1443   */
+  swap5
+  pop
+    /* "EmbeddedMultiCall.yul":1480:1494   */
+  tag_6
+    /* "EmbeddedMultiCall.yul":1489:1493   */
+  0x60
+    /* "EmbeddedMultiCall.yul":1480:1494   */
+  tag_2
+  jump	// in
+tag_6:
+    /* "EmbeddedMultiCall.yul":1529:1537   */
+  number
+    /* "EmbeddedMultiCall.yul":1518:1528   */
+  dup2
+    /* "EmbeddedMultiCall.yul":1511:1538   */
+  mstore
+    /* "EmbeddedMultiCall.yul":1603:1604   */
+  0x01
+    /* "EmbeddedMultiCall.yul":1594:1602   */
+  number
+    /* "EmbeddedMultiCall.yul":1590:1605   */
+  sub
+    /* "EmbeddedMultiCall.yul":1580:1606   */
+  blockhash
+    /* "EmbeddedMultiCall.yul":1574:1578   */
+  0x20
+    /* "EmbeddedMultiCall.yul":1563:1573   */
+  dup3
+    /* "EmbeddedMultiCall.yul":1559:1579   */
+  add
+    /* "EmbeddedMultiCall.yul":1552:1607   */
+  mstore
+    /* "EmbeddedMultiCall.yul":1649:1653   */
+  0x40
+    /* "EmbeddedMultiCall.yul":1638:1648   */
+  dup2
+    /* "EmbeddedMultiCall.yul":1634:1654   */
+  add
+    /* "EmbeddedMultiCall.yul":1680:1681   */
+  0x00
+    /* "EmbeddedMultiCall.yul":1716:1722   */
+  dup8
+    /* "EmbeddedMultiCall.yul":1701:2911   */
+tag_7:
+    /* "EmbeddedMultiCall.yul":1731:1737   */
+  dup8
+    /* "EmbeddedMultiCall.yul":1728:1729   */
+  dup2
+    /* "EmbeddedMultiCall.yul":1725:1738   */
+  lt
+    /* "EmbeddedMultiCall.yul":1701:2911   */
+  iszero
+  tag_9
+  jumpi
+    /* "EmbeddedMultiCall.yul":1813:1814   */
+  dup1
+    /* "EmbeddedMultiCall.yul":1807:1815   */
+  mload
+    /* "EmbeddedMultiCall.yul":1804:1806   */
+  0x60
+    /* "EmbeddedMultiCall.yul":1800:1816   */
+  shr
+    /* "EmbeddedMultiCall.yul":1842:1846   */
+  0x14
+    /* "EmbeddedMultiCall.yul":1839:1840   */
+  dup3
+    /* "EmbeddedMultiCall.yul":1835:1847   */
+  add
+    /* "EmbeddedMultiCall.yul":1830:1847   */
+  swap2
+  pop
+    /* "EmbeddedMultiCall.yul":1889:1890   */
+  dup2
+    /* "EmbeddedMultiCall.yul":1883:1891   */
+  mload
+    /* "EmbeddedMultiCall.yul":1879:1882   */
+  0xe0
+    /* "EmbeddedMultiCall.yul":1875:1892   */
+  shr
+    /* "EmbeddedMultiCall.yul":1918:1922   */
+  0x04
+    /* "EmbeddedMultiCall.yul":1915:1916   */
+  dup4
+    /* "EmbeddedMultiCall.yul":1911:1923   */
+  add
+    /* "EmbeddedMultiCall.yul":1906:1923   */
+  swap3
+  pop
+    /* "EmbeddedMultiCall.yul":1951:1952   */
+  dup3
+    /* "EmbeddedMultiCall.yul":1978:1985   */
+  dup2
+    /* "EmbeddedMultiCall.yul":1975:1976   */
+  dup5
+    /* "EmbeddedMultiCall.yul":1971:1986   */
+  add
+    /* "EmbeddedMultiCall.yul":1966:1986   */
+  swap4
+  pop
+    /* "EmbeddedMultiCall.yul":2015:2020   */
+  gas
+    /* "EmbeddedMultiCall.yul":2105:2106   */
+  0x00
+    /* "EmbeddedMultiCall.yul":2102:2103   */
+  dup1
+    /* "EmbeddedMultiCall.yul":2093:2100   */
+  dup5
+    /* "EmbeddedMultiCall.yul":2084:2091   */
+  dup5
+    /* "EmbeddedMultiCall.yul":2081:2082   */
+  0x00
+    /* "EmbeddedMultiCall.yul":2076:2079   */
+  dup9
+    /* "EmbeddedMultiCall.yul":2059:2074   */
+  dup16
+    /* "EmbeddedMultiCall.yul":2054:2107   */
+  call
+    /* "EmbeddedMultiCall.yul":2141:2142   */
+  0x01
+    /* "EmbeddedMultiCall.yul":2127:2140   */
+  dup11
+    /* "EmbeddedMultiCall.yul":2124:2143   */
+  eq
+    /* "EmbeddedMultiCall.yul":2121:2361   */
+  iszero
+  tag_10
+  jumpi
+    /* "EmbeddedMultiCall.yul":2188:2193   */
+  gas
+    /* "EmbeddedMultiCall.yul":2179:2187   */
+  dup3
+    /* "EmbeddedMultiCall.yul":2175:2194   */
+  sub
+    /* "EmbeddedMultiCall.yul":2231:2245   */
+  tag_11
+    /* "EmbeddedMultiCall.yul":2240:2244   */
+  0x04
+    /* "EmbeddedMultiCall.yul":2231:2245   */
+  tag_2
+  jump	// in
+tag_11:
+    /* "EmbeddedMultiCall.yul":2290:2297   */
+  dup2
+    /* "EmbeddedMultiCall.yul":2286:2289   */
+  0xe0
+    /* "EmbeddedMultiCall.yul":2282:2298   */
+  shl
+    /* "EmbeddedMultiCall.yul":2268:2281   */
+  dup2
+    /* "EmbeddedMultiCall.yul":2261:2299   */
+  mstore
+    /* "EmbeddedMultiCall.yul":2341:2345   */
+  0x04
+    /* "EmbeddedMultiCall.yul":2331:2340   */
+  dup15
+    /* "EmbeddedMultiCall.yul":2327:2346   */
+  add
+    /* "EmbeddedMultiCall.yul":2315:2346   */
+  swap14
+  pop
+    /* "EmbeddedMultiCall.yul":2144:2361   */
+  pop
+  pop
+    /* "EmbeddedMultiCall.yul":2121:2361   */
+tag_10:
+    /* "EmbeddedMultiCall.yul":2395:2409   */
+  tag_12
+    /* "EmbeddedMultiCall.yul":2404:2408   */
+  0x01
+    /* "EmbeddedMultiCall.yul":2395:2409   */
+  tag_2
+  jump	// in
+tag_12:
+    /* "EmbeddedMultiCall.yul":2451:2454   */
+  dup2
+    /* "EmbeddedMultiCall.yul":2447:2450   */
+  0xf8
+    /* "EmbeddedMultiCall.yul":2443:2455   */
+  shl
+    /* "EmbeddedMultiCall.yul":2430:2442   */
+  dup2
+    /* "EmbeddedMultiCall.yul":2423:2456   */
+  mstore
+    /* "EmbeddedMultiCall.yul":2508:2522   */
+  tag_13
+    /* "EmbeddedMultiCall.yul":2517:2521   */
+  0x04
+    /* "EmbeddedMultiCall.yul":2508:2522   */
+  tag_2
+  jump	// in
+tag_13:
+    /* "EmbeddedMultiCall.yul":2568:2584   */
+  returndatasize
+    /* "EmbeddedMultiCall.yul":2564:2567   */
+  0xe0
+    /* "EmbeddedMultiCall.yul":2560:2585   */
+  shl
+    /* "EmbeddedMultiCall.yul":2543:2559   */
+  dup2
+    /* "EmbeddedMultiCall.yul":2536:2586   */
+  mstore
+    /* "EmbeddedMultiCall.yul":2635:2661   */
+  tag_14
+    /* "EmbeddedMultiCall.yul":2644:2660   */
+  returndatasize
+    /* "EmbeddedMultiCall.yul":2635:2661   */
+  tag_2
+  jump	// in
+tag_14:
+    /* "EmbeddedMultiCall.yul":2706:2722   */
+  returndatasize
+    /* "EmbeddedMultiCall.yul":2704:2705   */
+  0x00
+    /* "EmbeddedMultiCall.yul":2690:2703   */
+  dup3
+    /* "EmbeddedMultiCall.yul":2675:2723   */
+  returndatacopy
+    /* "EmbeddedMultiCall.yul":2777:2781   */
+  0x05
+    /* "EmbeddedMultiCall.yul":2767:2776   */
+  dup16
+    /* "EmbeddedMultiCall.yul":2763:2782   */
+  add
+    /* "EmbeddedMultiCall.yul":2751:2782   */
+  swap15
+  pop
+    /* "EmbeddedMultiCall.yul":2822:2838   */
+  returndatasize
+    /* "EmbeddedMultiCall.yul":2812:2821   */
+  dup16
+    /* "EmbeddedMultiCall.yul":2808:2839   */
+  add
+    /* "EmbeddedMultiCall.yul":2796:2839   */
+  swap15
+  pop
+    /* "EmbeddedMultiCall.yul":2879:2880   */
+  0x01
+    /* "EmbeddedMultiCall.yul":2869:2878   */
+  dup11
+    /* "EmbeddedMultiCall.yul":2865:2881   */
+  add
+    /* "EmbeddedMultiCall.yul":2853:2881   */
+  swap10
+  pop
+    /* "EmbeddedMultiCall.yul":1743:2911   */
+  pop
+  pop
+  pop
+  pop
+  pop
+  pop
+  pop
+  pop
+    /* "EmbeddedMultiCall.yul":1701:2911   */
+  jump(tag_7)
+tag_9:
+    /* "EmbeddedMultiCall.yul":1705:1724   */
+  pop
+    /* "EmbeddedMultiCall.yul":2948:2957   */
+  dup1
+    /* "EmbeddedMultiCall.yul":2937:2947   */
+  dup3
+    /* "EmbeddedMultiCall.yul":2930:2958   */
+  mstore
+    /* "EmbeddedMultiCall.yul":2994:3008   */
+  tag_15
+    /* "EmbeddedMultiCall.yul":3003:3007   */
+  0x04
+    /* "EmbeddedMultiCall.yul":2994:3008   */
+  tag_2
+  jump	// in
+tag_15:
+    /* "EmbeddedMultiCall.yul":3061:3066   */
+  gas
+    /* "EmbeddedMultiCall.yul":3056:3060   */
+  dup14
+    /* "EmbeddedMultiCall.yul":3052:3067   */
+  sub
+    /* "EmbeddedMultiCall.yul":3048:3051   */
+  0xe0
+    /* "EmbeddedMultiCall.yul":3044:3068   */
+  shl
+    /* "EmbeddedMultiCall.yul":3025:3043   */
+  dup2
+    /* "EmbeddedMultiCall.yul":3018:3069   */
+  mstore
+    /* "EmbeddedMultiCall.yul":3105:3109   */
+  0x04
+    /* "EmbeddedMultiCall.yul":3095:3104   */
+  dup8
+    /* "EmbeddedMultiCall.yul":3091:3110   */
+  add
+    /* "EmbeddedMultiCall.yul":3079:3110   */
+  swap7
+  pop
+    /* "EmbeddedMultiCall.yul":3139:3148   */
+  dup7
+    /* "EmbeddedMultiCall.yul":3127:3137   */
+  dup5
+    /* "EmbeddedMultiCall.yul":3120:3149   */
+  return
+
